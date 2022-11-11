@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use image::{self, GenericImageView, GenericImage};
 use nalgebra::Vector3;
 
@@ -24,12 +26,12 @@ const COLOR_SCHEME: [Vec3; 26] = [
     Vec3::new(147_f32, 154_f32, 183_f32),
     Vec3::new(128_f32, 135_f32, 162_f32),
     Vec3::new(110_f32, 115_f32, 141_f32),
-    Vec3::new(91_f32, 96_f32, 120_f32),
-    Vec3::new(73_f32, 77_f32, 100_f32),
-    Vec3::new(54_f32, 58_f32, 79_f32),
-    Vec3::new(36_f32, 39_f32, 58_f32),
-    Vec3::new(30_f32, 32_f32, 48_f32),
-    Vec3::new(24_f32, 25_f32, 38_f32),
+    Vec3::new(91_f32,  96_f32,  120_f32),
+    Vec3::new(73_f32,  77_f32,  100_f32),
+    Vec3::new(54_f32,  58_f32,  79_f32),
+    Vec3::new(36_f32,  39_f32,  58_f32),
+    Vec3::new(30_f32,  32_f32,  48_f32),
+    Vec3::new(24_f32,  25_f32,  38_f32),
 ];
 
 /*
@@ -52,9 +54,7 @@ fn sim_fn(a: &Vec3, b: &Vec3) -> f32 {
 }
 
 fn norm(v: Vec3) -> Vec3 {
-    // x,y,z in [0, 255]
     let (x, y, z) = (v.x, v.y, v.z);
-    // map to -1, 1
     let (x, y, z) = (x / 255.0 * 2.0 - 1.0, y / 255.0 * 2.0 - 1.0, z / 255.0 * 2.0 - 1.0);
     Vec3::new(x, y, z)
 }
@@ -63,33 +63,29 @@ fn norm(v: Vec3) -> Vec3 {
 fn find_simular(original: Vec3) -> Vec3 {
     let mut sim = vec![];
 
-    for color in COLOR_SCHEME {
-        sim.push(sim_fn(&norm(original), &norm(color)));
+    for &color in &COLOR_SCHEME {
+        sim.push((
+            sim_fn(&norm(original), &norm(color)),
+            color
+        ));
     }
 
-    let max_idx = {
-        let mut max = 0_usize;
-        for (i, &cos_sim) in sim.iter().enumerate() {
-            max = if cos_sim > sim[max] {
-                    max
-                } else {
-                    i
-                };
-        }
-        max
-    };
+    sim.sort_by(|a,b| 
+        if       a>b {Ordering::Greater}
+        else if  a<b {Ordering::Less   }
+        else         {Ordering::Equal  });
 
-    COLOR_SCHEME[max_idx]
+    sim[0].1
 }
 
 fn main() {
-    // TODO RESTORE
+
+    // init
     let mut img = image::open("test.jpeg")
         .expect("Could not open image");
     let (width, height) = img.dimensions();
 
-    img.brighten(4);
-    
+    // loop
     for y in 0..height {
         for x in 0..width {
             let pixel = img.get_pixel(x, y);
@@ -99,6 +95,6 @@ fn main() {
         }
     }
 
-    img.brighten(4);
+    // end
     img.save("output.png").unwrap();
 }
