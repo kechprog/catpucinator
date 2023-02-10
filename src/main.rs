@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, env::args, vec};
+use std::{cmp::Ordering, env::args};
 
 use image::{self, GenericImage, GenericImageView};
 use nalgebra::Vector3;
@@ -149,9 +149,9 @@ enum Algorithm {
 impl Algorithm {
     fn from_str(s: &str) -> Self {
         match s {
-            "floyd-steinberg" => Self::FloydSteinberg,
+            "floyd-steinberg"  => Self::FloydSteinberg,
             "closest-to-color" => Self::ClosestToColor,
-            _ => panic!("Unknown algorithm"),
+            _                  => panic!("Unknown algorithm"),
         }
     }
 }
@@ -166,12 +166,18 @@ struct App {
 impl App {
     fn parse() -> Self {
         let args: Vec<_> = args().collect();
-        let output = &args[
-            args.iter().position(|s| s == "-o").expect("Provide output file") + 1
-        ];
-        let algorithm = &args[
-            args.iter().position(|s| s == "-a").expect("Provide algorithm") + 1
-        ];
+
+        let output = if let Some(pos) = args.iter().position(|s| s == "-o") {
+            args[pos + 1].to_string()
+        } else {
+            format!("dih_{}", args.get(1).expect("provide input file!") )
+        };
+
+        let algorithm = if let Some(pos) = args.iter().position(|s| s == "-a") {
+            &args[pos + 1]
+        } else {
+            "floyd-steinberg"
+        };
 
         Self {
             image: image::open(args.get(1).expect("Provide input file")).expect("Could not open image"),
